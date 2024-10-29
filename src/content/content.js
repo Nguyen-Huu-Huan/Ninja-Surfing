@@ -78,7 +78,7 @@
     }
 
     getClickableElements() {
-      const elements = Array.from(document.querySelectorAll("a[href], button, [style*='cursor: pointer']"));
+      const elements = Array.from(document.querySelectorAll("a, input, select, option, button, [style*='cursor: pointer']"));
       const hoverableElements = Array.from(document.querySelectorAll('*')).filter(el => {
         const style = window.getComputedStyle(el);
         return style.cursor === 'pointer' || style.getPropertyValue(':hover');
