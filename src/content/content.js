@@ -10,6 +10,7 @@
       this.overlayTextColor = "black";
       this.overlayFontSize = "1rem";
       this.overlayPadding = "2px";
+      this.overlayLineHeight = "1.3rem";
       this.SCROLL_DEBOUNCE_TIME = 150;
       this.VIEWPORT_BUFFER = 0.5;
 
@@ -49,9 +50,7 @@
       console.log("Clickable elements found:", elements.length);
       if (!elements.length) return;
 
-      const uniqueElements = this.filterSimilarElements(elements);
-      console.log("Unique elements:", uniqueElements.length);
-      this.updateVisibleOverlays(uniqueElements);
+      this.updateVisibleOverlays(elements);
       window.addEventListener("scroll", this.debouncedHandleScroll);
     }
 
@@ -182,8 +181,7 @@
     handleScroll() {
       console.log("handleScroll called");
       const elements = this.getClickableElements();
-      const uniqueElements = this.filterSimilarElements(elements);
-      this.updateVisibleOverlays(uniqueElements);
+      this.updateVisibleOverlays(elements);
     }
 
     createOverlay(charLabel, element) {
@@ -197,6 +195,7 @@
         font-size: ${this.overlayFontSize};
         padding-left: ${this.overlayPadding};
         padding-right: ${this.overlayPadding};
+        line-height: ${this.overlayLineHeight};
         border-radius: 4px;
         z-index: 1000;
         pointer-events: none;
