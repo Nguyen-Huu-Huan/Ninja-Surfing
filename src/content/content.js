@@ -1,4 +1,4 @@
-(function() {
+(function () {
   // OverlayManager class definition
   class OverlayManager {
     constructor() {
@@ -13,16 +13,19 @@
       this.SCROLL_DEBOUNCE_TIME = 150;
       this.VIEWPORT_BUFFER = 0.5;
 
-      this.debouncedHandleScroll = this.debounce(this.handleScroll.bind(this), 150);
+      this.debouncedHandleScroll = this.debounce(
+        this.handleScroll.bind(this),
+        150
+      );
       this.keyboardManager = new KeyboardManager(this);
     }
 
     toggleOverlays() {
       console.log("toggleOverlays called, current state:", this.overlayVisible);
-      
+
       // First, clean up any existing overlays to ensure a clean state
       this.cleanup();
-      
+
       // Toggle the state first
       this.overlayVisible = !this.overlayVisible;
 
@@ -35,7 +38,7 @@
         this.removeOverlays();
         this.keyboardManager.deactivate();
       }
-      
+
       console.log("Overlays toggled, new state:", this.overlayVisible);
     }
 
@@ -49,25 +52,28 @@
       const uniqueElements = this.filterSimilarElements(elements);
       console.log("Unique elements:", uniqueElements.length);
       this.updateVisibleOverlays(uniqueElements);
-      window.addEventListener('scroll', this.debouncedHandleScroll);
+      window.addEventListener("scroll", this.debouncedHandleScroll);
     }
 
     removeOverlays() {
       this.cleanup();
-      window.removeEventListener('scroll', this.debouncedHandleScroll);
+      window.removeEventListener("scroll", this.debouncedHandleScroll);
       this.keyboardManager.deactivate();
-      this.overlayVisible = false;  // Ensure state is consistent
+      this.overlayVisible = false; // Ensure state is consistent
     }
 
     cleanup() {
-      document.querySelectorAll("[data-link-overlay]").forEach(overlay => overlay.remove());
+      document
+        .querySelectorAll("[data-link-overlay]")
+        .forEach((overlay) => overlay.remove());
       this.elementOverlayMap = new WeakMap();
       this.charMap = {};
       this.typedChars = "";
     }
 
     updateAppearance(settings) {
-      this.overlayBackgroundColor = settings.backgroundColor || this.overlayBackgroundColor;
+      this.overlayBackgroundColor =
+        settings.backgroundColor || this.overlayBackgroundColor;
       this.overlayTextColor = settings.textColor || this.overlayTextColor;
       this.overlayFontSize = settings.fontSize || this.overlayFontSize;
       this.overlayPadding = settings.padding || this.overlayPadding;
@@ -78,16 +84,26 @@
     }
 
     getClickableElements() {
-      const elements = Array.from(document.querySelectorAll("a, input, select, option, button, [style*='cursor: pointer']"));
-      const hoverableElements = Array.from(document.querySelectorAll('*')).filter(el => {
+      const elements = Array.from(
+        document.querySelectorAll(
+          "a, input, select, option, button, [style*='cursor: pointer']"
+        )
+      );
+      const hoverableElements = Array.from(
+        document.querySelectorAll("*")
+      ).filter((el) => {
         const style = window.getComputedStyle(el);
-        return style.cursor === 'pointer' || style.getPropertyValue(':hover');
+        return style.cursor === "pointer" || style.getPropertyValue(":hover");
       });
       return [...new Set([...elements, ...hoverableElements])];
     }
 
     updateVisibleOverlays(elements) {
-      console.log("updateVisibleOverlays called with", elements.length, "elements");
+      console.log(
+        "updateVisibleOverlays called with",
+        elements.length,
+        "elements"
+      );
       const viewportHeight = window.innerHeight;
       const bufferZone = viewportHeight * this.VIEWPORT_BUFFER;
       const topBound = window.scrollY - bufferZone;
@@ -119,29 +135,32 @@
     }
 
     removeOverlappingOverlays() {
-      const overlays = Array.from(document.querySelectorAll('[data-link-overlay]'));
+      const overlays = Array.from(
+        document.querySelectorAll("[data-link-overlay]")
+      );
       const overlaysToRemove = new Set();
 
       for (let i = 0; i < overlays.length; i++) {
         if (overlaysToRemove.has(overlays[i])) continue;
 
         const rect1 = overlays[i].getBoundingClientRect();
-        
+
         for (let j = i + 1; j < overlays.length; j++) {
           if (overlaysToRemove.has(overlays[j])) continue;
 
           const rect2 = overlays[j].getBoundingClientRect();
-          
+
           if (this.isOverlapping(rect1, rect2)) {
             // Remove the overlay that's lower on the page
-            const overlayToRemove = rect1.top > rect2.top ? overlays[i] : overlays[j];
+            const overlayToRemove =
+              rect1.top > rect2.top ? overlays[i] : overlays[j];
             overlaysToRemove.add(overlayToRemove);
           }
         }
       }
 
       // Remove the overlapping overlays
-      overlaysToRemove.forEach(overlay => {
+      overlaysToRemove.forEach((overlay) => {
         const charLabel = overlay.textContent;
         const element = this.charMap[charLabel]?.element;
         if (element) {
@@ -152,10 +171,12 @@
 
     isOverlapping(rect1, rect2) {
       const buffer = 5; // 5px buffer to account for very close overlays
-      return !(rect1.right + buffer < rect2.left || 
-              rect1.left > rect2.right + buffer || 
-              rect1.bottom + buffer < rect2.top || 
-              rect1.top > rect2.bottom + buffer);
+      return !(
+        rect1.right + buffer < rect2.left ||
+        rect1.left > rect2.right + buffer ||
+        rect1.bottom + buffer < rect2.top ||
+        rect1.top > rect2.bottom + buffer
+      );
     }
 
     handleScroll() {
@@ -174,7 +195,8 @@
         background: linear-gradient(135deg, ${this.overlayBackgroundColor} 0%, rgba(255,255,255,0.9) 100%);
         color: ${this.overlayTextColor};
         font-size: ${this.overlayFontSize};
-        padding: ${this.overlayPadding};
+        padding-left: ${this.overlayPadding};
+        padding-right: ${this.overlayPadding};
         border-radius: 4px;
         z-index: 1000;
         pointer-events: none;
@@ -186,7 +208,7 @@
         min-width: 20px;
         transform: translate(-50%, 0);
         backdrop-filter: blur(2px);
-        border: 1px solid rgba(255,255,255,0.3);
+        border: 0.5px solid rgba(255,255,255,0.3);
         text-shadow: 0 1px 1px rgba(0,0,0,0.1);
         transition: all 0.2s ease;
       `;
@@ -196,14 +218,16 @@
       overlay.style.left = `${left + window.scrollX + width / 2}px`;
 
       // Add hover effect
-      overlay.addEventListener('mouseenter', () => {
-        overlay.style.transform = 'translate(-50%, 0) scale(1.1)';
-        overlay.style.boxShadow = '0 4px 8px rgba(0,0,0,0.15), 0 1px 2px rgba(0,0,0,0.15)';
+      overlay.addEventListener("mouseenter", () => {
+        overlay.style.transform = "translate(-50%, 0) scale(1.1)";
+        overlay.style.boxShadow =
+          "0 4px 8px rgba(0,0,0,0.15), 0 1px 2px rgba(0,0,0,0.15)";
       });
 
-      overlay.addEventListener('mouseleave', () => {
-        overlay.style.transform = 'translate(-50%, 0) scale(1)';
-        overlay.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1), 0 0 1px rgba(0,0,0,0.1)';
+      overlay.addEventListener("mouseleave", () => {
+        overlay.style.transform = "translate(-50%, 0) scale(1)";
+        overlay.style.boxShadow =
+          "0 2px 4px rgba(0,0,0,0.1), 0 0 1px rgba(0,0,0,0.1)";
       });
 
       return overlay;
@@ -242,14 +266,20 @@
     }
 
     updateOverlayHighlight(overlay, charLabel) {
-      overlay.innerHTML = charLabel.split('').map((char, index) => 
-        `<span style="
-          color: ${index < this.typedChars.length ? '#ff3366' : this.overlayTextColor};
+      overlay.innerHTML = charLabel
+        .split("")
+        .map(
+          (char, index) =>
+            `<span style="
+          color: ${
+            index < this.typedChars.length ? "#ff3366" : this.overlayTextColor
+          };
           transition: color 0.2s ease;
           display: inline-block;
-          ${index < this.typedChars.length ? 'transform: scale(1.1);' : ''}
+          ${index < this.typedChars.length ? "transform: scale(1.1);" : ""}
         ">${char}</span>`
-      ).join('');
+        )
+        .join("");
     }
 
     updateOverlayPosition(element) {
@@ -287,8 +317,11 @@
       const uniqueElements = [];
       const seenTargets = new Set();
 
-      elements.forEach(element => {
-        const target = element.getAttribute('href') || element.getAttribute('onclick') || element.textContent.trim();
+      elements.forEach((element) => {
+        const target =
+          element.getAttribute("href") ||
+          element.getAttribute("onclick") ||
+          element.textContent.trim();
         if (!seenTargets.has(target)) {
           seenTargets.add(target);
           uniqueElements.push(element);
@@ -318,7 +351,10 @@
 
     handleKeyPress(event) {
       // Allow typing in input fields and textareas
-      if (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA') {
+      if (
+        event.target.tagName === "INPUT" ||
+        event.target.tagName === "TEXTAREA"
+      ) {
         return;
       }
 
@@ -361,7 +397,7 @@
 
       this.observerInstance.observe(document.body, {
         childList: true,
-        subtree: true
+        subtree: true,
       });
     }
 
@@ -386,7 +422,10 @@
   }
 
   function preventTyping(event) {
-    if (event.target.tagName !== 'INPUT' && event.target.tagName !== 'TEXTAREA') {
+    if (
+      event.target.tagName !== "INPUT" &&
+      event.target.tagName !== "TEXTAREA"
+    ) {
       event.preventDefault();
     }
   }
@@ -395,8 +434,11 @@
     const uniqueElements = [];
     const seenTargets = new Set();
 
-    elements.forEach(element => {
-      const target = element.getAttribute('href') || element.getAttribute('onclick') || element.textContent.trim();
+    elements.forEach((element) => {
+      const target =
+        element.getAttribute("href") ||
+        element.getAttribute("onclick") ||
+        element.textContent.trim();
       if (!seenTargets.has(target)) {
         seenTargets.add(target);
         uniqueElements.push(element);
@@ -436,11 +478,14 @@
   }
 
   function loadAppearanceSettings() {
-    chrome.runtime.sendMessage({ action: "getAppearanceSettings" }, (response) => {
-      if (response) {
-        overlayManager.updateAppearance(response);
+    chrome.runtime.sendMessage(
+      { action: "getAppearanceSettings" },
+      (response) => {
+        if (response) {
+          overlayManager.updateAppearance(response);
+        }
       }
-    });
+    );
   }
 
   window.addEventListener("load", initialize);
