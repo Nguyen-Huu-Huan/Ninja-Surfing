@@ -242,7 +242,7 @@
     handleCharInput(char) {
       this.typedChars += char;
       console.log("Typed chars:", this.typedChars);
-
+      document.activeElement.blur();
       let matchFound = false;
       for (const [charLabel, { element }] of Object.entries(this.charMap)) {
         if (charLabel.startsWith(this.typedChars)) {
@@ -252,7 +252,14 @@
             this.updateOverlayHighlight(overlay, charLabel);
             if (this.typedChars === charLabel) {
               this.removeOverlays();
-              element.click();
+              if (
+                element.tagName === "INPUT" ||
+                element.tagName === "TEXTAREA"
+              ) {
+                element.focus();
+              } else {
+                element.click();
+              }
               break;
             }
           }
@@ -465,6 +472,8 @@
 
   function handleMessages(request, sender, sendResponse) {
     console.log("Message received in content script:", request);
+    // Unfocus any focused elements
+    document.activeElement.blur();
     if (request && request.action === "toggleLinkShortcuts") {
       console.log("Toggling link shortcuts");
       overlayManager.toggleOverlays();
