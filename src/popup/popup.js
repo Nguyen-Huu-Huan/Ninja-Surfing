@@ -8,14 +8,19 @@ document.addEventListener("DOMContentLoaded", () => {
   const status = document.getElementById("status");
   const preview = document.getElementById("preview");
   const previewText = document.getElementById("previewText");
-  const toggleButton = document.getElementById("toggleLinkShortcuts");
+
+  // Check if elements are found
+  if (!backgroundColorInput || !textColorInput || !fontSizeInput || !paddingSelect || !saveAppearanceButton || !openFullOptionsButton || !status || !preview || !previewText) {
+    console.error("One or more elements are missing in the popup HTML.");
+    return; // Exit if elements are not found
+  }
 
   function loadSettings() {
     utils.loadAppearanceSettings((settings) => {
-      if (backgroundColorInput) backgroundColorInput.value = settings.backgroundColor;
-      if (textColorInput) textColorInput.value = settings.textColor;
-      if (fontSizeInput) fontSizeInput.value = settings.fontSize;
-      if (paddingSelect) paddingSelect.value = settings.padding;
+      backgroundColorInput.value = settings.backgroundColor;
+      textColorInput.value = settings.textColor;
+      fontSizeInput.value = settings.fontSize;
+      paddingSelect.value = settings.padding;
       updatePreview();
     });
   }
@@ -24,45 +29,39 @@ document.addEventListener("DOMContentLoaded", () => {
     utils.updatePreview(
       preview,
       previewText,
-      backgroundColorInput ? backgroundColorInput.value : null,
-      textColorInput ? textColorInput.value : null,
-      fontSizeInput ? fontSizeInput.value : null,
-      paddingSelect ? paddingSelect.value : null
+      backgroundColorInput.value,
+      textColorInput.value,
+      fontSizeInput.value,
+      paddingSelect.value
     );
   }
 
   loadSettings();
 
   [backgroundColorInput, textColorInput, fontSizeInput, paddingSelect].forEach(input => {
-    if (input) input.addEventListener("input", updatePreview);
+    input.addEventListener("input", updatePreview);
   });
 
-  if (saveAppearanceButton) {
-    saveAppearanceButton.addEventListener("click", () => {
-      const newSettings = {
-        overlayBackgroundColor: backgroundColorInput ? backgroundColorInput.value : null,
-        overlayTextColor: textColorInput ? textColorInput.value : null,
-        overlayFontSize: fontSizeInput ? fontSizeInput.value : null,
-        overlayPadding: paddingSelect ? paddingSelect.value : null
-      };
+  saveAppearanceButton.addEventListener("click", () => {
+    const newSettings = {
+      overlayBackgroundColor: backgroundColorInput.value,
+      overlayTextColor: textColorInput.value,
+      overlayFontSize: fontSizeInput.value,
+      overlayPadding: paddingSelect.value
+    };
 
-      utils.saveAppearanceSettings(newSettings, (success) => {
-        if (status) {
-          status.textContent = success ? "Appearance settings saved!" : "Error saving settings";
-          status.style.display = "block";
-          setTimeout(() => {
-            status.style.display = "none";
-          }, 3000);
-        }
-      });
+    utils.saveAppearanceSettings(newSettings, (success) => {
+      status.textContent = success ? "Appearance settings saved!" : "Error saving settings";
+      status.style.display = "block";
+      setTimeout(() => {
+        status.style.display = "none";
+      }, 3000);
     });
-  }
+  });
 
-  if (openFullOptionsButton) {
-    openFullOptionsButton.addEventListener("click", () => {
-      chrome.runtime.openOptionsPage();
-    });
-  }
+  openFullOptionsButton.addEventListener("click", () => {
+    chrome.runtime.openOptionsPage();
+  });
 
   document.addEventListener('keydown', (event) => {
     if (event.ctrlKey && event.shiftKey && event.key === 'K') {
@@ -71,13 +70,16 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  toggleButton.addEventListener("click", () => {
-    chrome.runtime.sendMessage({ action: "toggle_link_shortcuts" }, (response) => {
-      if (response.success) {
-        console.log("Toggled link shortcuts successfully");
-      } else {
-        console.error("Failed to toggle link shortcuts");
-      }
+  function sendMessageToContent(color) {
+    console.log("Sending message to content script with color:", color); // Debug log
+    chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
+      chrome.tabs.sendMessage(tabs[0].id, {action: "updateSpanStyle", color: color}, (response) => {
+        if (response && response.status === "success") {
+          console.log("Span styles updated successfully.");
+        } else {
+          console.error("Failed to update span styles:", response); // Debug log
+        }
+      });
     });
-  });
+  }
 });

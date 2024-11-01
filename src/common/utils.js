@@ -31,6 +31,7 @@ const utils = {
   },
 
   saveAppearanceSettings(settings, callback) {
+    console.log("Saving appearance settings:", settings);
     chrome.storage.sync.set(settings, () => {
       if (chrome.runtime.lastError) {
         console.error("Error saving settings:", chrome.runtime.lastError);
@@ -38,6 +39,7 @@ const utils = {
       } else {
         chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
           if (tabs && tabs[0]) {
+            console.log("Sending message to update overlay appearance");
             chrome.tabs.sendMessage(tabs[0].id, {
               action: "updateOverlayAppearance",
               ...settings
@@ -49,50 +51,3 @@ const utils = {
     });
   }
 };
-
-export function debounce(func, wait) {
-  let timeout;
-  return function executedFunction(...args) {
-    const later = () => {
-      clearTimeout(timeout);
-      func(...args);
-    };
-    clearTimeout(timeout);
-    timeout = setTimeout(later, wait);
-  };
-}
-
-export function preventTyping(event) {
-  if (event.target.tagName !== 'INPUT' && event.target.tagName !== 'TEXTAREA') {
-    event.preventDefault();
-  }
-}
-
-export function filterSimilarElements(elements) {
-  const uniqueElements = [];
-  const seenTargets = new Set();
-
-  elements.forEach(element => {
-    const target = element.getAttribute('href') || element.getAttribute('onclick') || element.textContent.trim();
-    if (!seenTargets.has(target)) {
-      seenTargets.add(target);
-      uniqueElements.push(element);
-    }
-  });
-
-  return uniqueElements;
-}
-
-export function loadAppearanceSettings(callback) {
-  // Load settings from storage and execute the callback
-  chrome.storage.sync.get(['backgroundColor', 'textColor', 'fontSize', 'padding'], (settings) => {
-    callback(settings);
-  });
-}
-
-export function saveAppearanceSettings(settings, callback) {
-  // Save settings to storage
-  chrome.storage.sync.set(settings, () => {
-    callback(true);
-  });
-}

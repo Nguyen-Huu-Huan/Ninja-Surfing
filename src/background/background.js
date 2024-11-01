@@ -84,6 +84,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     console.warn("Unknown action received:", request.action);
     sendResponse({ error: "Unknown action" });
   }
+  return true;
 });
 
 chrome.runtime.onInstalled.addListener(() => {

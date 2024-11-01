@@ -71,11 +71,26 @@
     }
 
     updateAppearance(settings) {
+      console.log("Updating appearance with settings:", settings);
       this.overlayBackgroundColor =
-        settings.backgroundColor || this.overlayBackgroundColor;
-      this.overlayTextColor = settings.textColor || this.overlayTextColor;
-      this.overlayFontSize = settings.fontSize || this.overlayFontSize;
-      this.overlayPadding = settings.padding || this.overlayPadding;
+        settings.overlayBackgroundColor || this.overlayBackgroundColor;
+      this.overlayTextColor = settings.overlayTextColor || this.overlayTextColor;
+      this.overlayFontSize = settings.overlayFontSize || this.overlayFontSize;
+      this.overlayPadding = settings.overlayPadding || this.overlayPadding;
+      this.overlayLineHeight = settings.lineHeight || this.overlayLineHeight;
+      this.overlayFontWeight = settings.fontWeight || "500";
+      this.overlayTextShadow = settings.textShadow || "0 1px 1px rgba(0,0,0,0.1)";
+
+      console.log("Updated overlay appearance settings:", {
+        backgroundColor: this.overlayBackgroundColor,
+        textColor: this.overlayTextColor,
+        fontSize: this.overlayFontSize,
+        padding: this.overlayPadding,
+        lineHeight: this.overlayLineHeight,
+        fontWeight: this.overlayFontWeight,
+        textShadow: this.overlayTextShadow,
+      });
+
       if (this.overlayVisible) {
         this.removeOverlays();
         this.addOverlays();
@@ -107,6 +122,7 @@
       const bufferZone = viewportHeight * this.VIEWPORT_BUFFER;
       const topBound = window.scrollY - bufferZone;
       const bottomBound = window.scrollY + viewportHeight + bufferZone;
+      let fragment = document.createDocumentFragment();
 
       // Create all overlays first
       elements.forEach((element, index) => {
@@ -118,7 +134,7 @@
           if (!this.elementOverlayMap.has(element)) {
             const charLabel = this.generateCharLabel(index);
             const overlay = this.createOverlay(charLabel, element);
-            document.body.appendChild(overlay);
+            fragment.appendChild(overlay);
             this.elementOverlayMap.set(element, overlay);
             this.charMap[charLabel] = { element };
           } else {
@@ -128,6 +144,7 @@
           this.removeOverlay(element);
         }
       });
+      document.body.appendChild(fragment);
 
       // Now check for overlaps and remove overlapping spans
       this.removeOverlappingOverlays();
@@ -201,14 +218,14 @@
         pointer-events: none;
         box-shadow: 0 2px 4px rgba(0,0,0,0.1), 0 0 1px rgba(0,0,0,0.1);
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
-        font-weight: 500;
+        font-weight: ${this.overlayFontWeight};
         letter-spacing: 0.5px;
         text-align: center;
         min-width: 20px;
         transform: translate(-50%, 0);
         backdrop-filter: blur(2px);
         border: 0.5px solid rgba(255,255,255,0.3);
-        text-shadow: 0 1px 1px rgba(0,0,0,0.1);
+        text-shadow: ${this.overlayTextShadow};
         transition: all 0.2s ease;
       `;
 
@@ -234,14 +251,44 @@
 
     generateCharLabel(index) {
       const chars = "abcdefghijklmnopqrstuvwxyz";
-      const first = chars[Math.floor(index / chars.length) % chars.length];
-      const second = chars[index % chars.length];
-      return `${first}${second}`;
+      const nums = "0123456789";
+      const specialChars = "!@#$%^&*()_+-=[]{}|;:,.<>?";
+
+      const charsLength = chars.length;
+      const numsLength = nums.length;
+      const specialCharsLength = specialChars.length;
+
+      // First, handle single-character labels (only from `chars`)
+      if (index < charsLength) {
+        return chars[index];
+      }
+
+      // If index exceeds single characters, handle two-character labels (chars + nums)
+      index -= charsLength;
+      const twoCharCombinations = charsLength * numsLength;
+      if (index < twoCharCombinations) {
+        const firstCharIndex = Math.floor(index / numsLength);
+        const secondCharIndex = index % numsLength;
+        return nums[secondCharIndex] + chars[firstCharIndex];
+      }
+
+      // If index exceeds two-character labels, handle three-character labels (chars + nums + specialChars)
+      index -= twoCharCombinations;
+      const threeCharCombinations = charsLength * numsLength * specialCharsLength;
+      if (index < threeCharCombinations) {
+        const firstCharIndex = Math.floor(index / (numsLength * specialCharsLength));
+        const secondCharIndex = Math.floor(index / specialCharsLength) % numsLength;
+        const thirdCharIndex = index % specialCharsLength;
+        return specialChars[thirdCharIndex] + nums[secondCharIndex] + chars[firstCharIndex];
+      }
+
+      // Extend further if necessary (could add more patterns here if needed)
+      return "";
     }
 
     handleCharInput(char) {
       this.typedChars += char;
-      console.log("Typed chars:", this.typedChars);
+      console.log("typedChars", this.typedChars);
       document.activeElement.blur();
       let matchFound = false;
       for (const [charLabel, { element }] of Object.entries(this.charMap)) {
@@ -275,7 +322,7 @@
       overlay.innerHTML = charLabel
         .split("")
         .map(
-          (char, index) =>
+          (char, index) => 
             `<span style="
           color: ${
             index < this.typedChars.length ? "#ff3366" : this.overlayTextColor
@@ -345,13 +392,32 @@
     constructor(overlayManager) {
       this.overlayManager = overlayManager;
       this.handleKeyPress = this.handleKeyPress.bind(this);
+      this.handleInput = this.handleInput.bind(this); // Bind handleInput to this
+      this.inputElement = null;
     }
 
     activate() {
+      this.inputElement = document.createElement("input"); // Use input instead of textarea
+      this.inputElement.tabIndex = -1; // Prevent focus by tabbing
+      this.inputElement.style.position = "absolute";
+      this.inputElement.style.width = "0px";
+      this.inputElement.style.height = "0px";
+      this.inputElement.style.zIndex = "-1000";
+
+      document.body.appendChild(this.inputElement);
+
+      // Add event listeners
+      this.inputElement.addEventListener("input", this.handleInput);
       document.addEventListener("keydown", this.handleKeyPress);
     }
 
     deactivate() {
+      // Remove event listeners and input element
+      if (this.inputElement) {
+        this.inputElement.removeEventListener("input", this.handleInput);
+        document.body.removeChild(this.inputElement);
+        this.inputElement = null;
+      }
       document.removeEventListener("keydown", this.handleKeyPress);
     }
 
@@ -364,20 +430,44 @@
         return;
       }
 
-      const keyPressed = event.key.toLowerCase();
+      // Capture the key pressed
+      const keyPressed = event.key;
 
-      if (keyPressed === "escape") {
+      if (keyPressed === "Escape") {
         this.overlayManager.removeOverlays();
+        this.deactivate();
         return;
       }
 
-      // Only prevent default for alphabetic keys
-      if (/^[a-z]$/.test(keyPressed)) {
+      // Prevent default scrolling behavior for certain keys
+      const scrollKeys = ["ArrowUp", "ArrowDown", "PageUp", "PageDown", "Home", "End"];
+      if (scrollKeys.includes(keyPressed)) {
+        event.preventDefault(); // Prevent scrolling
+      }
+
+      // Stop event propagation to prevent scrolling
+      event.stopPropagation();
+
+      // Set the value of the input element to capture the key press
+      this.inputElement.value = keyPressed; // Capture the key pressed
+      this.inputElement.dispatchEvent(new Event("input")); // Trigger input event
+    }
+
+    handleInput(event) {
+      const inputValue = event.target.value; // Get the raw input value
+
+      // Regex pattern for validation (allowing numbers and special characters)
+      const pattern = /^[a-zA-Z0-9!@#$%^&*()_+\-=[\]{}|;:,.<>?]*$/;
+
+      // Validate the input value against the pattern
+      if (pattern.test(inputValue)) {
         event.preventDefault();
-        this.overlayManager.handleCharInput(keyPressed);
+        this.overlayManager.handleCharInput(inputValue); // Pass the input value to the overlay manager
       }
     }
-  }
+}
+
+
 
   // NavigationObserver class definition
   class NavigationObserver {
@@ -465,8 +555,10 @@
     keyboardManager = new KeyboardManager(overlayManager);
     navigationObserver = new NavigationObserver(overlayManager);
 
-    chrome.runtime.onMessage.addListener(handleMessages);
+    // Load current appearance settings when initializing
     loadAppearanceSettings();
+
+    chrome.runtime.onMessage.addListener(handleMessages);
     console.log("Content script initialized");
   }
 
@@ -479,9 +571,19 @@
       overlayManager.toggleOverlays();
       sendResponse({ success: true });
     } else if (request && request.action === "updateOverlayAppearance") {
-      console.log("Updating overlay appearance");
+      console.log("Updating overlay appearance with settings:", request);
       overlayManager.updateAppearance(request);
       sendResponse({ success: true });
+    } else if (request && request.action === "getCurrentSettings") {
+      sendResponse({
+        backgroundColor: overlayManager.overlayBackgroundColor,
+        textColor: overlayManager.overlayTextColor,
+        fontSize: overlayManager.overlayFontSize,
+        padding: overlayManager.overlayPadding,
+        lineHeight: overlayManager.overlayLineHeight,
+        fontWeight: overlayManager.overlayFontWeight,
+        textShadow: overlayManager.overlayTextShadow,
+      });
     }
   }
 
@@ -495,6 +597,24 @@
       }
     );
   }
+
+  // Ensure that the options page can also call this function
+  chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+    if (request.action === "getCurrentSettings") {
+      sendResponse({
+        backgroundColor: overlayManager.overlayBackgroundColor,
+        textColor: overlayManager.overlayTextColor,
+        fontSize: overlayManager.overlayFontSize,
+        padding: overlayManager.overlayPadding,
+        lineHeight: overlayManager.overlayLineHeight,
+        fontWeight: overlayManager.overlayFontWeight,
+        textShadow: overlayManager.overlayTextShadow,
+      });
+    } else if (request.action === "updateOverlayAppearance") {
+      overlayManager.updateAppearance(request);
+      sendResponse({ success: true });
+    }
+  });
 
   window.addEventListener("load", initialize);
   window.addEventListener("beforeunload", () => {
@@ -517,3 +637,24 @@
 
   console.log("Content script loaded");
 })();
+
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (request.action === "updateOverlayAppearance") {
+    console.log("Received message to update overlay appearance:", request);
+    // Handle the message and update the overlay appearance
+    // Perform the necessary updates here
+    sendResponse({ success: true });
+  }
+});
+
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+    console.log("Message received in content script:", request); // Debug log
+    if (request.action === "updateSpanStyle") {
+        const spans = document.querySelectorAll("span"); // Adjust selector as needed
+        spans.forEach(span => {
+            span.style.color = request.color; // Example style update
+            // Add more style updates as needed
+        });
+        sendResponse({status: "success"});
+    }
+});

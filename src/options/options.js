@@ -41,7 +41,16 @@ document.addEventListener("DOMContentLoaded", () => {
       textColorInput.value = settings.textColor || "#000000";
       fontSizeInput.value = settings.fontSize || "1rem";
       paddingSelect.value = settings.padding || "2px";
+      updatePreview(); // Update preview after loading settings
     });
+  }
+
+  function updatePreview() {
+    // Update the preview element based on current input values
+    preview.style.backgroundColor = backgroundColorInput.value;
+    previewText.style.color = textColorInput.value;
+    previewText.style.fontSize = fontSizeInput.value + 'rem'; // Assuming fontSize is in rem
+    preview.style.padding = utils.getPaddingValue(paddingSelect.value); // Use the utils function to get padding
   }
 
   loadSettings();
@@ -57,13 +66,16 @@ document.addEventListener("DOMContentLoaded", () => {
         backgroundColor: backgroundColorInput.value,
         textColor: textColorInput.value,
         fontSize: fontSizeInput.value,
-        padding: paddingSelect.value
+        padding: paddingSelect.value,
       };
 
-      // Send message to background script
+      console.log("Sending new settings:", newSettings);
+
+      // Send message to content script
       chrome.runtime.sendMessage(newSettings, (response) => {
-        if (response.success) {
+        if (response && response.success) {
           status.textContent = "Appearance settings saved!";
+          console.log("Appearance settings updated successfully:", newSettings);
         } else {
           status.textContent = "Error saving settings";
         }
@@ -75,27 +87,12 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  document.getElementById('saveButton').addEventListener('click', () => {
-    const backgroundColor = document.getElementById('backgroundColorInput').value;
-    const textColor = document.getElementById('textColorInput').value;
-    const fontSize = document.getElementById('fontSizeInput').value;
-    const padding = document.getElementById('paddingInput').value;
+  // Define the applyCurrentStyles function
+  function applyCurrentStyles() {
+    // Logic to apply current styles based on saved settings
+    loadSettings(); // Call loadSettings to ensure the latest settings are applied
+  }
 
-    const settings = {
-      action: "updateOverlayAppearance",
-      backgroundColor,
-      textColor,
-      fontSize,
-      padding
-    };
-
-    // Send message to background script
-    chrome.runtime.sendMessage(settings, (response) => {
-      if (response.success) {
-        console.log("Overlay appearance updated successfully");
-      } else {
-        console.error("Failed to update overlay appearance:", response.error);
-      }
-    });
-  });
+  // Call the function to apply styles on page load
+  document.addEventListener('DOMContentLoaded', applyCurrentStyles);
 });
