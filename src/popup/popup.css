@@ -8,7 +8,7 @@
 }
 
 body {
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   width: 320px;
   margin: 0;
   padding: 0;
@@ -50,9 +50,11 @@ h2 {
   margin-bottom: 15px;
 }
 
-.setting {
+.setting-padding,
+.setting-label-mode {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   margin-bottom: 10px;
 }
 
@@ -61,7 +63,8 @@ label {
   margin-right: 10px;
 }
 
-input[type="color"], select {
+input[type="color"],
+select {
   width: 60px;
   height: 30px;
   border: 1px solid var(--border-color);
@@ -92,7 +95,8 @@ footer {
   justify-content: space-between;
 }
 
-.primary-button, .secondary-button {
+.primary-button,
+.secondary-button {
   padding: 8px 15px;
   border: none;
   border-radius: 4px;
@@ -126,4 +130,8 @@ footer {
   color: white;
   text-align: center;
   display: none;
+}
+#padding,
+#labelOption {
+  min-width: fit-content;
 }

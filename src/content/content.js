@@ -74,12 +74,14 @@
       console.log("Updating appearance with settings:", settings);
       this.overlayBackgroundColor =
         settings.overlayBackgroundColor || this.overlayBackgroundColor;
-      this.overlayTextColor = settings.overlayTextColor || this.overlayTextColor;
+      this.overlayTextColor =
+        settings.overlayTextColor || this.overlayTextColor;
       this.overlayFontSize = settings.overlayFontSize || this.overlayFontSize;
       this.overlayPadding = settings.overlayPadding || this.overlayPadding;
       this.overlayLineHeight = settings.lineHeight || this.overlayLineHeight;
       this.overlayFontWeight = settings.fontWeight || "500";
-      this.overlayTextShadow = settings.textShadow || "0 1px 1px rgba(0,0,0,0.1)";
+      this.overlayTextShadow =
+        settings.textShadow || "0 1px 1px rgba(0,0,0,0.1)";
 
       console.log("Updated overlay appearance settings:", {
         backgroundColor: this.overlayBackgroundColor,
@@ -112,7 +114,7 @@
       return [...new Set([...elements, ...hoverableElements])];
     }
 
-    updateVisibleOverlays(elements) {
+    async updateVisibleOverlays(elements) {
       console.log(
         "updateVisibleOverlays called with",
         elements.length,
@@ -124,6 +126,9 @@
       const bottomBound = window.scrollY + viewportHeight + bufferZone;
       let fragment = document.createDocumentFragment();
 
+      // Retrieve the user's preferred option
+      const preferredOption = await this.getUserPreferredOption(); // Await the promise
+
       // Create all overlays first
       elements.forEach((element, index) => {
         const { top, bottom } = element.getBoundingClientRect();
@@ -132,7 +137,7 @@
 
         if (elementBottom >= topBound && elementTop <= bottomBound) {
           if (!this.elementOverlayMap.has(element)) {
-            const charLabel = this.generateCharLabel(index);
+            const charLabel = this.generateCharLabel(index, preferredOption); // Pass the preferred option
             const overlay = this.createOverlay(charLabel, element);
             fragment.appendChild(overlay);
             this.elementOverlayMap.set(element, overlay);
@@ -249,7 +254,7 @@
       return overlay;
     }
 
-    generateCharLabel(index) {
+    generateCharLabel(index, preferredOption) {
       const chars = "abcdefghijklmnopqrstuvwxyz";
       const nums = "0123456789";
       const specialChars = "!@#$%^&*()_+-=[]{}|;:,.<>?";
@@ -258,6 +263,50 @@
       const numsLength = nums.length;
       const specialCharsLength = specialChars.length;
 
+      switch (preferredOption) {
+        case "default":
+          // Handle default option (unique labels)
+          return this.handleDefaultOption(
+            index,
+            chars,
+            nums,
+            specialChars,
+            charsLength,
+            numsLength,
+            specialCharsLength
+          );
+
+        case "characters_only":
+          // Handle characters only option
+          return this.handleCharactersOrNumbersOnlyOption(
+            index,
+            chars,
+            charsLength
+          );
+
+        case "numbers_only":
+          // Handle numbers only option
+          return this.handleCharactersOrNumbersOnlyOption(
+            index,
+            nums,
+            numsLength
+          );
+
+        default:
+          console.error("Invalid preferred option");
+          return ""; // Return empty string or handle error as needed
+      }
+    }
+
+    handleDefaultOption(
+      index,
+      chars,
+      nums,
+      specialChars,
+      charsLength,
+      numsLength,
+      specialCharsLength
+    ) {
       // First, handle single-character labels (only from `chars`)
       if (index < charsLength) {
         return chars[index];
@@ -274,21 +323,41 @@
 
       // If index exceeds two-character labels, handle three-character labels (chars + nums + specialChars)
       index -= twoCharCombinations;
-      const threeCharCombinations = charsLength * numsLength * specialCharsLength;
+      const threeCharCombinations =
+        charsLength * numsLength * specialCharsLength;
       if (index < threeCharCombinations) {
-        const firstCharIndex = Math.floor(index / (numsLength * specialCharsLength));
-        const secondCharIndex = Math.floor(index / specialCharsLength) % numsLength;
+        const firstCharIndex = Math.floor(
+          index / (numsLength * specialCharsLength)
+        );
+        const secondCharIndex =
+          Math.floor(index / specialCharsLength) % numsLength;
         const thirdCharIndex = index % specialCharsLength;
-        return specialChars[thirdCharIndex] + nums[secondCharIndex] + chars[firstCharIndex];
+        return (
+          specialChars[thirdCharIndex] +
+          nums[secondCharIndex] +
+          chars[firstCharIndex]
+        );
       }
 
-      // Extend further if necessary (could add more patterns here if needed)
-      return "";
+      return ""; // Extend further if necessary
     }
 
-    handleCharInput(char) {
+    handleCharactersOrNumbersOnlyOption(index, chars, charsLength) {
+      // Generate labels that may start with the same character but are unique
+      if (index < charsLength) {
+        return chars[index];
+      }
+      let label = "";
+
+      while (index >= 0) {
+        label = chars[index % charsLength] + label;
+        index = Math.floor(index / charsLength) - 1;
+      }
+      return label;
+    }
+
+    async handleCharInput(char) {
       this.typedChars += char;
-      console.log("typedChars", this.typedChars);
       document.activeElement.blur();
       let matchFound = false;
       for (const [charLabel, { element }] of Object.entries(this.charMap)) {
@@ -297,15 +366,40 @@
           const overlay = this.elementOverlayMap.get(element);
           if (overlay) {
             this.updateOverlayHighlight(overlay, charLabel);
+            const preferredOption = await this.getUserPreferredOption(); // Await the promise
             if (this.typedChars === charLabel) {
-              this.removeOverlays();
-              if (
-                element.tagName === "INPUT" ||
-                element.tagName === "TEXTAREA"
-              ) {
-                element.focus();
+              if (preferredOption !== "default") {
+                // Require Enter key to activate
+                console.log(
+                  "Only numbers or characters, waiting for Enter key."
+                );
+                document.addEventListener(
+                  "keydown",
+                  (event) => {
+                    if (event.key === "Enter") {
+                      this.removeOverlays();
+                      if (
+                        element.tagName === "INPUT" ||
+                        element.tagName === "TEXTAREA"
+                      ) {
+                        element.focus();
+                      } else {
+                        element.click();
+                      }
+                    }
+                  },
+                  { once: true }
+                );
               } else {
-                element.click();
+                this.removeOverlays();
+                if (
+                  element.tagName === "INPUT" ||
+                  element.tagName === "TEXTAREA"
+                ) {
+                  element.focus();
+                } else {
+                  element.click();
+                }
               }
               break;
             }
@@ -322,7 +416,7 @@
       overlay.innerHTML = charLabel
         .split("")
         .map(
-          (char, index) => 
+          (char, index) =>
             `<span style="
           color: ${
             index < this.typedChars.length ? "#ff3366" : this.overlayTextColor
@@ -384,6 +478,15 @@
       return uniqueElements;
     }
 
+    getUserPreferredOption() {
+      // Retrieve the preferred option from storage
+      return new Promise((resolve) => {
+        chrome.storage.sync.get("preferredOption", (data) => {
+          resolve(data.preferredOption || "default"); // Default to 'default' if not set
+        });
+      });
+    }
+
     // Other methods like createOverlay, updateOverlayPosition, etc.
   }
 
@@ -440,7 +543,14 @@
       }
 
       // Prevent default scrolling behavior for certain keys
-      const scrollKeys = ["ArrowUp", "ArrowDown", "PageUp", "PageDown", "Home", "End"];
+      const scrollKeys = [
+        "ArrowUp",
+        "ArrowDown",
+        "PageUp",
+        "PageDown",
+        "Home",
+        "End",
+      ];
       if (scrollKeys.includes(keyPressed)) {
         event.preventDefault(); // Prevent scrolling
       }
@@ -451,6 +561,12 @@
       // Set the value of the input element to capture the key press
       this.inputElement.value = keyPressed; // Capture the key pressed
       this.inputElement.dispatchEvent(new Event("input")); // Trigger input event
+
+      // Check for Ctrl + Enter
+      if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
+        this.handleCtrlEnter();
+        return;
+      }
     }
 
     handleInput(event) {
@@ -465,9 +581,19 @@
         this.overlayManager.handleCharInput(inputValue); // Pass the input value to the overlay manager
       }
     }
-}
 
-
+    handleCtrlEnter() {
+      const activeElement = document.activeElement;
+      if (activeElement) {
+        // Check if the active element is a button or input
+        if (activeElement.tagName === "BUTTON" || activeElement.tagName === "INPUT" || activeElement.tagName === "TEXTAREA") {
+          activeElement.click(); // Click the button or input
+        } else {
+          activeElement.focus(); // Focus on the element
+        }
+      }
+    }
+  }
 
   // NavigationObserver class definition
   class NavigationObserver {
@@ -648,13 +774,13 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 });
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-    console.log("Message received in content script:", request); // Debug log
-    if (request.action === "updateSpanStyle") {
-        const spans = document.querySelectorAll("span"); // Adjust selector as needed
-        spans.forEach(span => {
-            span.style.color = request.color; // Example style update
-            // Add more style updates as needed
-        });
-        sendResponse({status: "success"});
-    }
+  console.log("Message received in content script:", request); // Debug log
+  if (request.action === "updateSpanStyle") {
+    const spans = document.querySelectorAll("span"); // Adjust selector as needed
+    spans.forEach((span) => {
+      span.style.color = request.color; // Example style update
+      // Add more style updates as needed
+    });
+    sendResponse({ status: "success" });
+  }
 });

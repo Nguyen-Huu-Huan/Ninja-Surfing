@@ -8,9 +8,10 @@ document.addEventListener("DOMContentLoaded", () => {
   const status = document.getElementById("status");
   const preview = document.getElementById("preview");
   const previewText = document.getElementById("previewText");
+  const labelOptionSelect = document.getElementById("labelOption");
 
   // Check if elements are found
-  if (!backgroundColorInput || !textColorInput || !fontSizeInput || !paddingSelect || !saveAppearanceButton || !openFullOptionsButton || !status || !preview || !previewText) {
+  if (!backgroundColorInput || !textColorInput || !fontSizeInput || !paddingSelect || !saveAppearanceButton || !openFullOptionsButton || !status || !preview || !previewText || !labelOptionSelect) {
     console.error("One or more elements are missing in the popup HTML.");
     return; // Exit if elements are not found
   }
@@ -80,6 +81,30 @@ document.addEventListener("DOMContentLoaded", () => {
           console.error("Failed to update span styles:", response); // Debug log
         }
       });
+    });
+  }
+
+  // Load the saved preferred option
+  loadPreferredOption();
+
+  labelOptionSelect.addEventListener("change", (event) => {
+    const selectedOption = event.target.value;
+    savePreferredOption(selectedOption); // Implement this function to save the option
+  });
+
+  function loadPreferredOption() {
+    // Retrieve the preferred option from storage
+    chrome.storage.sync.get("preferredOption", (data) => {
+      if (data.preferredOption) {
+        labelOptionSelect.value = data.preferredOption;
+      }
+    });
+  }
+
+  function savePreferredOption(option) {
+    // Save the preferred option to storage
+    chrome.storage.sync.set({ preferredOption: option }, () => {
+      console.log("Preferred option saved:", option);
     });
   }
 });
