@@ -22,8 +22,6 @@
     }
 
     toggleOverlays() {
-      console.log("toggleOverlays called, current state:", this.overlayVisible);
-
       // First, clean up any existing overlays to ensure a clean state
       this.cleanup();
 
@@ -31,23 +29,17 @@
       this.overlayVisible = !this.overlayVisible;
 
       if (this.overlayVisible) {
-        console.log("Adding overlays");
         this.addOverlays();
         this.keyboardManager.activate();
       } else {
-        console.log("Removing overlays");
         this.removeOverlays();
         this.keyboardManager.deactivate();
       }
-
-      console.log("Overlays toggled, new state:", this.overlayVisible);
     }
 
     addOverlays() {
-      console.log("addOverlays called");
       this.cleanup();
       const elements = this.getClickableElements();
-      console.log("Clickable elements found:", elements.length);
       if (!elements.length) return;
 
       this.updateVisibleOverlays(elements);
@@ -71,7 +63,6 @@
     }
 
     updateAppearance(settings) {
-      console.log("Updating appearance with settings:", settings);
       this.overlayBackgroundColor =
         settings.overlayBackgroundColor || this.overlayBackgroundColor;
       this.overlayTextColor =
@@ -82,16 +73,6 @@
       this.overlayFontWeight = settings.fontWeight || "500";
       this.overlayTextShadow =
         settings.textShadow || "0 1px 1px rgba(0,0,0,0.1)";
-
-      console.log("Updated overlay appearance settings:", {
-        backgroundColor: this.overlayBackgroundColor,
-        textColor: this.overlayTextColor,
-        fontSize: this.overlayFontSize,
-        padding: this.overlayPadding,
-        lineHeight: this.overlayLineHeight,
-        fontWeight: this.overlayFontWeight,
-        textShadow: this.overlayTextShadow,
-      });
 
       if (this.overlayVisible) {
         this.removeOverlays();
@@ -115,11 +96,6 @@
     }
 
     async updateVisibleOverlays(elements) {
-      console.log(
-        "updateVisibleOverlays called with",
-        elements.length,
-        "elements"
-      );
       const viewportHeight = window.innerHeight;
       const bufferZone = viewportHeight * this.VIEWPORT_BUFFER;
       const topBound = window.scrollY - bufferZone;
@@ -201,7 +177,6 @@
     }
 
     handleScroll() {
-      console.log("handleScroll called");
       const elements = this.getClickableElements();
       this.updateVisibleOverlays(elements);
     }
@@ -219,7 +194,7 @@
         padding-right: ${this.overlayPadding};
         line-height: ${this.overlayLineHeight};
         border-radius: 4px;
-        z-index: 1000;
+        z-index: 2147483647;
         pointer-events: none;
         box-shadow: 0 2px 4px rgba(0,0,0,0.1), 0 0 1px rgba(0,0,0,0.1);
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
@@ -370,9 +345,6 @@
             if (this.typedChars === charLabel) {
               if (preferredOption !== "default") {
                 // Require Enter key to activate
-                console.log(
-                  "Only numbers or characters, waiting for Enter key."
-                );
                 document.addEventListener(
                   "keydown",
                   (event) => {
@@ -586,7 +558,11 @@
       const activeElement = document.activeElement;
       if (activeElement) {
         // Check if the active element is a button or input
-        if (activeElement.tagName === "BUTTON" || activeElement.tagName === "INPUT" || activeElement.tagName === "TEXTAREA") {
+        if (
+          activeElement.tagName === "BUTTON" ||
+          activeElement.tagName === "INPUT" ||
+          activeElement.tagName === "TEXTAREA"
+        ) {
           activeElement.click(); // Click the button or input
         } else {
           activeElement.focus(); // Focus on the element
@@ -676,7 +652,6 @@
   let navigationObserver;
 
   function initialize() {
-    console.log("Initializing content script");
     overlayManager = new OverlayManager();
     keyboardManager = new KeyboardManager(overlayManager);
     navigationObserver = new NavigationObserver(overlayManager);
@@ -685,19 +660,15 @@
     loadAppearanceSettings();
 
     chrome.runtime.onMessage.addListener(handleMessages);
-    console.log("Content script initialized");
   }
 
   function handleMessages(request, sender, sendResponse) {
-    console.log("Message received in content script:", request);
     // Unfocus any focused elements
     document.activeElement.blur();
     if (request && request.action === "toggleLinkShortcuts") {
-      console.log("Toggling link shortcuts");
       overlayManager.toggleOverlays();
       sendResponse({ success: true });
     } else if (request && request.action === "updateOverlayAppearance") {
-      console.log("Updating overlay appearance with settings:", request);
       overlayManager.updateAppearance(request);
       sendResponse({ success: true });
     } else if (request && request.action === "getCurrentSettings") {
@@ -760,13 +731,10 @@
     originalReplaceState.apply(this, arguments);
     overlayManager.cleanup();
   };
-
-  console.log("Content script loaded");
 })();
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === "updateOverlayAppearance") {
-    console.log("Received message to update overlay appearance:", request);
     // Handle the message and update the overlay appearance
     // Perform the necessary updates here
     sendResponse({ success: true });
@@ -774,7 +742,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 });
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  console.log("Message received in content script:", request); // Debug log
   if (request.action === "updateSpanStyle") {
     const spans = document.querySelectorAll("span"); // Adjust selector as needed
     spans.forEach((span) => {

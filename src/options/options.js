@@ -36,28 +36,33 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function loadSettings() {
-    chrome.storage.sync.get(['backgroundColor', 'textColor', 'fontSize', 'padding'], (settings) => {
-      backgroundColorInput.value = settings.backgroundColor || "#ffffff";
-      textColorInput.value = settings.textColor || "#000000";
-      fontSizeInput.value = settings.fontSize || "1rem";
-      paddingSelect.value = settings.padding || "2px";
-      updatePreview(); // Update preview after loading settings
-    });
+    chrome.storage.sync.get(
+      ["backgroundColor", "textColor", "fontSize", "padding"],
+      (settings) => {
+        backgroundColorInput.value = settings.backgroundColor || "#ffffff";
+        textColorInput.value = settings.textColor || "#000000";
+        fontSizeInput.value = settings.fontSize || "1rem";
+        paddingSelect.value = settings.padding || "2px";
+        updatePreview(); // Update preview after loading settings
+      }
+    );
   }
 
   function updatePreview() {
     // Update the preview element based on current input values
     preview.style.backgroundColor = backgroundColorInput.value;
     previewText.style.color = textColorInput.value;
-    previewText.style.fontSize = fontSizeInput.value + 'rem'; // Assuming fontSize is in rem
+    previewText.style.fontSize = fontSizeInput.value + "rem"; // Assuming fontSize is in rem
     preview.style.padding = utils.getPaddingValue(paddingSelect.value); // Use the utils function to get padding
   }
 
   loadSettings();
 
-  [backgroundColorInput, textColorInput, fontSizeInput, paddingSelect].forEach(input => {
-    if (input) input.addEventListener("input", updatePreview);
-  });
+  [backgroundColorInput, textColorInput, fontSizeInput, paddingSelect].forEach(
+    (input) => {
+      if (input) input.addEventListener("input", updatePreview);
+    }
+  );
 
   if (saveAppearanceButton) {
     saveAppearanceButton.addEventListener("click", () => {
@@ -69,13 +74,10 @@ document.addEventListener("DOMContentLoaded", () => {
         padding: paddingSelect.value,
       };
 
-      console.log("Sending new settings:", newSettings);
-
       // Send message to content script
       chrome.runtime.sendMessage(newSettings, (response) => {
         if (response && response.success) {
           status.textContent = "Appearance settings saved!";
-          console.log("Appearance settings updated successfully:", newSettings);
         } else {
           status.textContent = "Error saving settings";
         }
@@ -94,5 +96,5 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // Call the function to apply styles on page load
-  document.addEventListener('DOMContentLoaded', applyCurrentStyles);
+  document.addEventListener("DOMContentLoaded", applyCurrentStyles);
 });

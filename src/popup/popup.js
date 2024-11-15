@@ -11,7 +11,18 @@ document.addEventListener("DOMContentLoaded", () => {
   const labelOptionSelect = document.getElementById("labelOption");
 
   // Check if elements are found
-  if (!backgroundColorInput || !textColorInput || !fontSizeInput || !paddingSelect || !saveAppearanceButton || !openFullOptionsButton || !status || !preview || !previewText || !labelOptionSelect) {
+  if (
+    !backgroundColorInput ||
+    !textColorInput ||
+    !fontSizeInput ||
+    !paddingSelect ||
+    !saveAppearanceButton ||
+    !openFullOptionsButton ||
+    !status ||
+    !preview ||
+    !previewText ||
+    !labelOptionSelect
+  ) {
     console.error("One or more elements are missing in the popup HTML.");
     return; // Exit if elements are not found
   }
@@ -39,20 +50,24 @@ document.addEventListener("DOMContentLoaded", () => {
 
   loadSettings();
 
-  [backgroundColorInput, textColorInput, fontSizeInput, paddingSelect].forEach(input => {
-    input.addEventListener("input", updatePreview);
-  });
+  [backgroundColorInput, textColorInput, fontSizeInput, paddingSelect].forEach(
+    (input) => {
+      input.addEventListener("input", updatePreview);
+    }
+  );
 
   saveAppearanceButton.addEventListener("click", () => {
     const newSettings = {
       overlayBackgroundColor: backgroundColorInput.value,
       overlayTextColor: textColorInput.value,
       overlayFontSize: fontSizeInput.value,
-      overlayPadding: paddingSelect.value
+      overlayPadding: paddingSelect.value,
     };
 
     utils.saveAppearanceSettings(newSettings, (success) => {
-      status.textContent = success ? "Appearance settings saved!" : "Error saving settings";
+      status.textContent = success
+        ? "Appearance settings saved!"
+        : "Error saving settings";
       status.style.display = "block";
       setTimeout(() => {
         status.style.display = "none";
@@ -64,23 +79,23 @@ document.addEventListener("DOMContentLoaded", () => {
     chrome.runtime.openOptionsPage();
   });
 
-  document.addEventListener('keydown', (event) => {
-    if (event.ctrlKey && event.shiftKey && event.key === 'K') {
+  document.addEventListener("keydown", (event) => {
+    if (event.ctrlKey && event.shiftKey && event.key === "K") {
       chrome.runtime.sendMessage({ action: "closePopup" });
       window.close();
     }
   });
 
   function sendMessageToContent(color) {
-    console.log("Sending message to content script with color:", color); // Debug log
-    chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
-      chrome.tabs.sendMessage(tabs[0].id, {action: "updateSpanStyle", color: color}, (response) => {
-        if (response && response.status === "success") {
-          console.log("Span styles updated successfully.");
-        } else {
-          console.error("Failed to update span styles:", response); // Debug log
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      chrome.tabs.sendMessage(
+        tabs[0].id,
+        { action: "updateSpanStyle", color: color },
+        (response) => {
+          if (!response || !response.status === "success")
+            console.error("Failed to update span styles:", response); // Debug log
         }
-      });
+      );
     });
   }
 
@@ -103,8 +118,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function savePreferredOption(option) {
     // Save the preferred option to storage
-    chrome.storage.sync.set({ preferredOption: option }, () => {
-      console.log("Preferred option saved:", option);
-    });
+    chrome.storage.sync.set({ preferredOption: option }, () => {});
   }
 });
