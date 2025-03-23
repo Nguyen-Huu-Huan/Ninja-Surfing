@@ -3,16 +3,13 @@
   "name": "Ninja Surfing",
   "version": "1.2",
   "description": "Browse the web like a ninja",
-  "permissions": [
-    "activeTab",
-    "storage",
-    "tabs"
-  ],
+  "permissions": ["activeTab", "storage", "tabs"],
   "background": {
     "service_worker": "src/background/background.js"
   },
   "content_scripts": [
     {
+      "run_at": "document_start",
       "matches": ["<all_urls>"],
       "js": ["src/content/content.js"]
     }

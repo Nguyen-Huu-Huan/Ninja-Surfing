@@ -712,8 +712,40 @@
       sendResponse({ success: true });
     }
   });
+  // Run the initialization function when the DOM content is loading
+  // document.addEventListener("DOMContentLoaded", () => {
+  //   initialize();
+  // });
+  // window.addEventListener("load", initialize);
+  if (document.readyState === "loading") {
+    document.addEventListener("readystatechange", () => {
+      if (document.readyState === "interactive") {
+        initialize();
+      }
+    });
+  } else {
+    initialize();
+  }
 
-  window.addEventListener("load", initialize);
+  function observeDOMChanges() {
+    const observer = new MutationObserver(() => {
+      if (document.body) {
+        initialize();
+        observer.disconnect();
+      }
+    });
+
+    observer.observe(document.documentElement, {
+      childList: true,
+      subtree: true,
+    });
+  }
+
+  if (document.readyState === "loading") {
+    observeDOMChanges();
+  } else {
+    initialize();
+  }
   window.addEventListener("beforeunload", () => {
     navigationObserver.disconnect();
     overlayManager.cleanup();
